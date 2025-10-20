@@ -49,7 +49,7 @@ try:
 
         # Insert into Postgres
         cur.execute("""
-            INSERT INTO users (customer_id, email, signup_date, region, plan, device)
+            INSERT INTO customers (customer_id, email, signup_date, region, plan, device)
             VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT (customer_id) DO NOTHING
         """, (
@@ -62,7 +62,7 @@ try:
         ))
         conn.commit()
 
-        print(f"Inserted user: {data['customer_id']}")
+        print(f"Inserted customer: {data['customer_id']}")
 
 except KeyboardInterrupt:
     print("Stopping consumer...")
