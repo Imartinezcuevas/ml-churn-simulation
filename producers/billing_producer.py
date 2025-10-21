@@ -6,6 +6,9 @@ from confluent_kafka import Producer
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+SEED = 42
+np.random.seed(SEED)
+
 BILLING_TOPIC = "billing_topic"
 MINUTES_PER_DAY = 1          # 1 minuto real = 1 día simulado
 TOTAL_SIMULATION_DAYS = 30

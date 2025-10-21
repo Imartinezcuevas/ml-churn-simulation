@@ -14,7 +14,10 @@ DELAY = 1
 MINUTES_PER_DAY = 1          # 1 real minute = 1 simulated day
 TOTAL_SIMULATION_DAYS = 30   # run for 30 simulated days
 
+SEED = 42
+np.random.seed(SEED)
 fake = Faker()
+Faker.seed(SEED)
 producer = Producer({'bootstrap.servers': 'localhost:9092'})
 
 plans = ["free", "basic", "premium"]
