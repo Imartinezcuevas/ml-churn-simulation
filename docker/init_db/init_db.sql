@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS customers (
     email VARCHAR,
     region VARCHAR,
     plan VARCHAR,
-    device VARCHAR
+    device VARCHAR,
+    churned BOOLEAN
 );
 
 CREATE TABLE IF NOT EXISTS activity (

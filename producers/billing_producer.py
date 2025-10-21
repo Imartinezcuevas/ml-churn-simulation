@@ -1,17 +1,13 @@
 import json
-import time
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 from confluent_kafka import Producer
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+BILLING_TOPIC = "billing_topic"
 SEED = 42
 np.random.seed(SEED)
-
-BILLING_TOPIC = "billing_topic"
-MINUTES_PER_DAY = 1          # 1 minuto real = 1 día simulado
-TOTAL_SIMULATION_DAYS = 30
 
 DB_CONFIG = {
     "host": "localhost",
@@ -25,40 +21,45 @@ producer = Producer({"bootstrap.servers": "localhost:9092"})
 
 PLAN_PRICES = {"free": 0, "basic": 10, "premium": 25}
 PLAN_PAYMENT_PROB = {"free": 0.0, "basic": 0.95, "premium": 0.98}
-PLAN_FAIL_SPIKE = {"basic": 0.10, "premium": 0.05} 
+PLAN_FAIL_SPIKE = {"basic": 0.10, "premium": 0.05}
 
-# ---------------------
+# -------------------
 # Helper functions
-# ---------------------
+# -------------------
 def delivery_report(err, msg):
     if err:
         print(f"Delivery failed: {err}")
     else:
-        print(f"Delivered message to {msg.topic()} [{msg.partition()}]")
+        pass
 
-def fetch_customers():
-    """Fetch all customers from DB"""
+def fetch_active_customers(simulated_day):
+    """Get all customers who signed up on or before simulated_day"""
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT customer_id, plan, signup_date FROM customers;")
+    cur.execute("""
+        SELECT customer_id, plan, signup_date, churned
+        FROM customers
+        WHERE signup_date <= %s
+    """, (simulated_day,))
     customers = cur.fetchall()
     cur.close()
     conn.close()
-    return customers
+    return [c for c in customers if not c.get("churned", False)]
 
-def simulate_billing(customer, simulated_date):
+def simulate_billing(customer, simulated_day):
     plan = customer["plan"]
     if plan == "free":
         return None  # free plan doesn't pay
 
-    # Just a payment per month
     signup_date = customer["signup_date"]
-    days_since_signup = (simulated_date - signup_date).days
+    days_since_signup = (simulated_day - signup_date).days
+    # Monthly payment: every 30 days since signup
     if days_since_signup < 0 or days_since_signup % 30 != 0:
         return None
 
-    # Simulate payment failure (churn potencial)
+    # Simulate payment success/failure
     pay_success = np.random.rand() < PLAN_PAYMENT_PROB[plan]
+    # Occasionally fail beyond normal probability
     if not pay_success and np.random.rand() < PLAN_FAIL_SPIKE[plan]:
         status = "failed"
     else:
@@ -66,33 +67,20 @@ def simulate_billing(customer, simulated_date):
 
     return {
         "customer_id": customer["customer_id"],
-        "payment_date": simulated_date.isoformat(),
+        "payment_date": simulated_day.isoformat(),
         "amount": PLAN_PRICES[plan],
         "status": status
     }
 
-# ---------------------
-# Simulation loop
-# ---------------------
-START_DATE = datetime(2024, 1, 1)
-day_index = 0
-
-while day_index < TOTAL_SIMULATION_DAYS:
-    simulated_day = START_DATE + timedelta(days=day_index)
-    customers = fetch_customers()
-    print(f"[Day {day_index + 1}] Simulating billing for {len(customers)} customers ...")
+# -------------------
+# Main function
+# -------------------
+def produce_billing(simulated_day):
+    customers = fetch_active_customers(simulated_day)
+    print(f"[{simulated_day.date()}] Producing billing events for {len(customers)} customers")
 
     for customer in customers:
-        signup_date = customer["signup_date"]
-
-        # Avoid billing before signup
-        if signup_date > simulated_day:
-            continue
-
         billing_event = simulate_billing(customer, simulated_day)
         if billing_event:
             producer.produce(BILLING_TOPIC, json.dumps(billing_event), callback=delivery_report)
-
     producer.flush()
-    day_index += 1
-    time.sleep(MINUTES_PER_DAY * 60)
