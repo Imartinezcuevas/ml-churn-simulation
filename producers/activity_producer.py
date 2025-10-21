@@ -41,6 +41,7 @@ def fetch_customers():
     cur.execute("SELECT customer_id, plan, devie, region, signup_date FROM customers;")
     customers = cur.fetchall()
     cur.close()
+    conn.close()
     return customers
 
 def simulate_sessions(customer, simulated_date):
