@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import time
 from signups_producer import produce_signups
 from activity_producer import produce_activity
 from support_producer import produce_support
@@ -16,7 +17,7 @@ for day_index in range(TOTAL_SIMULATION_DAYS):
 
     # Signups
     produce_signups(simulated_day)
-
+    time.sleep(2)
     # Update target-churn
     update_churn(simulated_day)
 
@@ -28,3 +29,5 @@ for day_index in range(TOTAL_SIMULATION_DAYS):
 
     # Create billing
     produce_billing(simulated_day)
+
+    time.sleep(6)

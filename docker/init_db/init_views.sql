@@ -25,10 +25,10 @@ ORDER BY day;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS avg_session_length_per_plan AS
 SELECT c.plan,
-       ROUND(AVG(a.session_length), 2) AS avg_session_length
+       ROUND(AVG(a.session_length)::numeric, 2) AS avg_session_length
 FROM activity a
 JOIN customers c ON a.customer_id = c.customer_id
-GROUP BY c.plan
+GROUP BY c.plan;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS support_summary AS
 SELECT DATE(ticket_date) AS day,
@@ -44,7 +44,7 @@ SELECT
     DATE(payment_date) AS day,
     COUNT(*) AS transactions,
     SUM(amount) AS total_revenue,
-    ROUND(AVG(amount), 2) AS avg_payment
+    ROUND(AVG(amount)::numeric, 2) AS avg_payment
 FROM billing
 WHERE status = 'success'
 GROUP BY day

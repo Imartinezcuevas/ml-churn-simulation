@@ -17,7 +17,7 @@ DB_CONFIG = {
     "password": "admin"
 }
 
-producer = Producer({"bootstrap.servers": "localhost:9092"})
+producer = Producer({"bootstrap.servers": "localhost:29092"})
 
 PLAN_SESSION_MEAN = {"free": 1, "basic": 3, "premium": 5}
 PLAN_SESSION_LENGTH = {"free": 5, "basic": 10, "premium": 15}
@@ -68,8 +68,9 @@ def simulate_sessions(customer, simulated_day):
     return sessions
 
 def produce_activity(simulated_day):
+    day_index = (simulated_day - datetime(2025,1,1)).days
     customers = fetch_active_customers(simulated_day)
-    print(f"[{simulated_day.date()}] Producing activity for {len(customers)} customers")
+    print(f"[Day {day_index+1}] Producing activity for {len(customers)} customers")
 
     for customer in customers:
         sessions = simulate_sessions(customer, simulated_day)

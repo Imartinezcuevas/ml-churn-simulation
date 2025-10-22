@@ -5,7 +5,7 @@ from confluent_kafka import Consumer, KafkaException
 # -----------------------
 # CONFIGURATION
 # -----------------------
-KAFKA_BROKER = 'localhost:9092'
+KAFKA_BROKER = 'localhost:29092'
 TOPIC = 'activity_topic'
 
 DB_HOST = 'localhost'
@@ -58,8 +58,6 @@ try:
             data['device']
         ))
         conn.commit()
-
-        print(f"Inserted activity: {data['customer_id']}")
 
 except KeyboardInterrupt:
     print("Stopping consumer...")

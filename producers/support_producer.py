@@ -17,7 +17,7 @@ DB_CONFIG = {
     "password": "admin"
 }
 
-producer = Producer({"bootstrap.servers": "localhost:9092"})
+producer = Producer({"bootstrap.servers": "localhost:29092"})
 
 ISSUE_TYPES = ["billing", "technical", "usability", "other"]
 PLAN_TICKET_PROB = {"free": 0.05, "basic": 0.03, "premium": 0.01}
@@ -74,8 +74,9 @@ def simulate_support(customer, simulated_day):
 # Main function
 # -------------------
 def produce_support(simulated_day):
+    day_index = (simulated_day - datetime(2025,1,1)).days
     customers = fetch_active_customers(simulated_day)
-    print(f"[{simulated_day.date()}] Producing support tickets for {len(customers)} customers")
+    print(f"[Day {day_index+1}] Producing support tickets for {len(customers)} customers")
 
     for customer in customers:
         tickets = simulate_support(customer, simulated_day)

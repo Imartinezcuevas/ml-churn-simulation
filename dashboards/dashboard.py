@@ -39,7 +39,7 @@ st.markdown("""
 # -----------------------
 # Load Data
 # -----------------------
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=8)
 def load_data():
     conn = conn_pool.getconn()
     try:
@@ -109,4 +109,4 @@ with st.expander("Show raw data tables"):
     st.dataframe(region_device)
 
 # Auto-refresh every 60s
-st_autorefresh(interval=60*1000, key="dashboard_refresh")
+st_autorefresh(interval=8*1000, key="dashboard_refresh")

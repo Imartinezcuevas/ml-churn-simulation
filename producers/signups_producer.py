@@ -11,7 +11,7 @@ np.random.seed(SEED)
 fake = Faker()
 Faker.seed(SEED)
 
-producer = Producer({'bootstrap.servers': 'localhost:9092'})
+producer = Producer({'bootstrap.servers': 'localhost:29092'})
 TOPIC = 'signups_topic'
 TOTAL_SIMULATION_DAYS = 365
 
@@ -47,8 +47,6 @@ def produce_signups(simulated_day):
     lam = base_lam * signup_multiplier(day_index)
     num_signups = np.random.poisson(lam)
 
-    new_customers = []
-
     for _ in range(num_signups):
         customer_id = str(uuid.uuid4())
         plan = np.random.choice(plans, p=probs)
@@ -68,4 +66,4 @@ def produce_signups(simulated_day):
         producer.produce(TOPIC, json.dumps(event), callback=delivery_report)
         
     producer.flush()
-    print(f"[Day {day_index+1}] Produced {len(new_customers)} signups")
+    print(f"[Day {day_index+1}] Produced {num_signups} signups")

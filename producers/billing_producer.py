@@ -17,7 +17,7 @@ DB_CONFIG = {
     "password": "admin"
 }
 
-producer = Producer({"bootstrap.servers": "localhost:9092"})
+producer = Producer({"bootstrap.servers": "localhost:29092"})
 
 PLAN_PRICES = {"free": 0, "basic": 10, "premium": 25}
 PLAN_PAYMENT_PROB = {"free": 0.0, "basic": 0.95, "premium": 0.98}
@@ -76,8 +76,9 @@ def simulate_billing(customer, simulated_day):
 # Main function
 # -------------------
 def produce_billing(simulated_day):
+    day_index = (simulated_day - datetime(2025,1,1)).days
     customers = fetch_active_customers(simulated_day)
-    print(f"[{simulated_day.date()}] Producing billing events for {len(customers)} customers")
+    print(f"[Day {day_index+1}] Producing billing events for {len(customers)} customers")
 
     for customer in customers:
         billing_event = simulate_billing(customer, simulated_day)

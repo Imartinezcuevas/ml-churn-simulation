@@ -1,7 +1,7 @@
 import time
 import psycopg2
 
-REFRESH_INTERVAL = 60
+REFRESH_INTERVAL = 8
 
 conn = psycopg2.connect(
     host = "localhost",
