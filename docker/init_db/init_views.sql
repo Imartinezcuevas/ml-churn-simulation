@@ -70,3 +70,40 @@ FROM customers c
 LEFT JOIN activity a ON DATE(a.session_start) = DATE(c.signup_date)
 GROUP BY DATE(c.signup_date)
 ORDER BY signup_day;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS churn_summary AS
+SELECT
+    DATE(churn_date) AS day,
+    COUNT(*) AS churned_customers
+FROM customers
+WHERE churn_date IS NOT NULL
+GROUP BY DATE(churn_date)
+ORDER BY day;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS weekly_retention AS
+SELECT
+    DATE_TRUNC('week', c.signup_date) AS signup_week,
+    DATE_TRUNC('week', a.session_start) AS active_week,
+    COUNT(DISTINCT a.customer_id) AS active_users
+FROM customers c
+JOIN activity a ON c.customer_id = a.customer_id
+GROUP BY signup_week, active_week
+ORDER BY signup_week, active_week;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS daily_arpu AS
+SELECT
+    DATE(b.payment_date) AS day,
+    ROUND(SUM(b.amount)::numeric / COUNT(DISTINCT b.customer_id), 2) AS arpu
+FROM billing b
+WHERE b.status = 'success'
+GROUP BY DATE(b.payment_date)
+ORDER BY day;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS support_load AS
+SELECT
+    s.day,
+    s.total_tickets,
+    a.active_users,
+    ROUND(s.total_tickets::numeric / a.active_users, 3) AS tickets_per_user
+FROM support_summary s
+JOIN daily_active_users a ON s.day = a.day;
