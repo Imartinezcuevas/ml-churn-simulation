@@ -1,0 +1,48 @@
+{
+  "id": null,
+  "title": "Churn Simulation Overview",
+  "timezone": "browser",
+  "schemaVersion": 30,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Daily Signups",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT day, total_signups FROM daily_signups_summary ORDER BY day;",
+          "refId": "A",
+          "datasource": "Postgres"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily Active Users",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT day, active_users FROM daily_active_users ORDER BY day;",
+          "refId": "B",
+          "datasource": "Postgres"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily Revenue",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT day, total_revenue FROM daily_revenue_summary ORDER BY day;",
+          "refId": "C",
+          "datasource": "Postgres"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 }
+    }
+  ]
+}
