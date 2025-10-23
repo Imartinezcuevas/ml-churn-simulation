@@ -24,7 +24,9 @@ services:
       - kafka
     entrypoint: >
       bash -c "
-        sleep 5 &&
+        until kafka-topics --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do
+          sleep 1
+        done &&
         kafka-topics --create --if-not-exists --topic signups_topic --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 &&
         kafka-topics --create --if-not-exists --topic activity_topic --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 &&
         kafka-topics --create --if-not-exists --topic support_topic --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 &&
@@ -41,17 +43,24 @@ services:
       - "5432:5432"
     volumes:
       - ./docker/init_db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d churn_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   
   grafana:
     image: grafana/grafana:11.1.0
     container_name: grafana
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     volumes:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning
       - ./docker/grafana/dashboards:/etc/grafana/dashboards

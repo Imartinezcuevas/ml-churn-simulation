@@ -7,6 +7,10 @@ datasources:
     url: postgres:5432
     database: churn_db
     user: admin
-    password: admin
     jsonData:
       sslmode: "disable"
+      postgresVersion: 1500
+    secureJsonData:
+      password: admin
+    isDefault: true
+    editable: false

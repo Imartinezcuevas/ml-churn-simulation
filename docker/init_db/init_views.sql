@@ -46,7 +46,7 @@ SELECT
     SUM(amount) AS total_revenue,
     ROUND(AVG(amount)::numeric, 2) AS avg_payment
 FROM billing
-WHERE status = 'success'
+WHERE status = 'paid'
 GROUP BY day
 ORDER BY day;
 
@@ -57,28 +57,9 @@ SELECT
     COUNT(b.id) AS payments_made,
     MAX(b.payment_date) AS last_payment
 FROM billing b
-WHERE b.status = 'success'
+WHERE b.status = 'paid'
 GROUP BY b.customer_id;
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS signup_activity_conversion AS
-SELECT
-    DATE(c.signup_date) AS signup_day,
-    COUNT(DISTINCT c.customer_id) AS signups,
-    COUNT(DISTINCT a.customer_id) AS active,
-    ROUND(100.0 * COUNT(DISTINCT a.customer_id) / COUNT(DISTINCT c.customer_id), 2) AS conversion_rate
-FROM customers c
-LEFT JOIN activity a ON DATE(a.session_start) = DATE(c.signup_date)
-GROUP BY DATE(c.signup_date)
-ORDER BY signup_day;
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS churn_summary AS
-SELECT
-    DATE(churn_date) AS day,
-    COUNT(*) AS churned_customers
-FROM customers
-WHERE churn_date IS NOT NULL
-GROUP BY DATE(churn_date)
-ORDER BY day;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS weekly_retention AS
 SELECT
@@ -95,7 +76,7 @@ SELECT
     DATE(b.payment_date) AS day,
     ROUND(SUM(b.amount)::numeric / COUNT(DISTINCT b.customer_id), 2) AS arpu
 FROM billing b
-WHERE b.status = 'success'
+WHERE b.status = 'paid'
 GROUP BY DATE(b.payment_date)
 ORDER BY day;
 
@@ -107,3 +88,64 @@ SELECT
     ROUND(s.total_tickets::numeric / a.active_users, 3) AS tickets_per_user
 FROM support_summary s
 JOIN daily_active_users a ON s.day = a.day;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS churn_summary AS
+SELECT
+    DATE(signup_date) AS signup_day,
+    COUNT(*) FILTER (WHERE churned) AS churned_users,
+    COUNT(*) AS total_users,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE churned) / COUNT(*), 2) AS churn_rate
+FROM customers
+GROUP BY signup_day
+ORDER BY signup_day;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS churned_user_activity AS
+SELECT
+    c.customer_id,
+    COUNT(a.id) AS sessions_before_churn,
+    ROUND(AVG(a.session_length)::numeric, 2) AS avg_session_length,
+    MAX(a.session_start) AS last_activity_date,
+    (CURRENT_DATE - MAX(a.session_start)::date) AS inactive_days
+FROM customers c
+LEFT JOIN activity a ON c.customer_id = a.customer_id
+WHERE c.churned = TRUE
+GROUP BY c.customer_id;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS churned_billing_summary AS
+SELECT
+    c.customer_id,
+    COUNT(b.id) AS payments_made,
+    SUM(b.amount) AS total_spent,
+    MAX(b.payment_date) AS last_payment_date
+FROM customers c
+LEFT JOIN billing b ON c.customer_id = b.customer_id
+WHERE c.churned = TRUE AND b.status = 'success'
+GROUP BY c.customer_id;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS churned_support_summary AS
+SELECT
+    c.customer_id,
+    COUNT(s.id) AS total_tickets,
+    ROUND(100.0 * SUM(CASE WHEN s.resolved THEN 1 ELSE 0 END) / COUNT(s.id), 2) AS resolution_rate
+FROM customers c
+LEFT JOIN support s ON c.customer_id = s.customer_id
+WHERE c.churned = TRUE
+GROUP BY c.customer_id;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS churn_insights AS
+SELECT
+    c.customer_id,
+    c.signup_date,
+    c.region,
+    c.plan,
+    a.sessions_before_churn,
+    a.inactive_days,
+    b.total_spent,
+    b.payments_made,
+    s.total_tickets,
+    s.resolution_rate
+FROM customers c
+LEFT JOIN churned_user_activity a ON c.customer_id = a.customer_id
+LEFT JOIN churned_billing_summary b ON c.customer_id = b.customer_id
+LEFT JOIN churned_support_summary s ON c.customer_id = s.customer_id
+WHERE c.churned = TRUE;

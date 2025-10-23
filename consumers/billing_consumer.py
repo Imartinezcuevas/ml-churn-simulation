@@ -6,7 +6,7 @@ from confluent_kafka import Consumer, KafkaException
 # CONFIGURATION
 # -----------------------
 KAFKA_BROKER = 'localhost:29092'
-TOPIC = 'support_topic'
+TOPIC = 'billing_topic'
 
 DB_HOST = 'localhost'
 DB_NAME = 'churn_db'
@@ -29,7 +29,7 @@ cur = conn.cursor()
 # -----------------------
 consumer = Consumer({
     'bootstrap.servers': KAFKA_BROKER,
-    'group.id': 'support-consumer-group',
+    'group.id': 'billing-consumer-group',
     'auto.offset.reset': 'earliest'
 })
 consumer.subscribe([TOPIC])
@@ -49,13 +49,13 @@ try:
 
         # Insert into Postgres
         cur.execute("""
-            INSERT INTO support (customer_id, ticket_date, issue_type, resolved)
+            INSERT INTO billing (customer_id, payment_date, amount, status)
             VALUES (%s, %s, %s, %s)
         """, (
             data['customer_id'],
-            data['ticket_date'],
-            data['issue_type'],
-            data['resolved']
+            data['payment_date'],
+            data['amount'],
+            data['status']
         ))
         conn.commit()
 
