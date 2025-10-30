@@ -126,7 +126,10 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS churned_support_summary AS
 SELECT
     c.customer_id,
     COUNT(s.id) AS total_tickets,
-    ROUND(100.0 * SUM(CASE WHEN s.resolved THEN 1 ELSE 0 END) / COUNT(s.id), 2) AS resolution_rate
+    ROUND(
+        100.0 * SUM(CASE WHEN s.resolved THEN 1 ELSE 0 END) / NULLIF(COUNT(s.id), 0), 
+        2
+    ) AS resolution_rate
 FROM customers c
 LEFT JOIN support s ON c.customer_id = s.customer_id
 WHERE c.churned = TRUE

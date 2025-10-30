@@ -49,8 +49,8 @@ try:
 
         # Insert into Postgres
         cur.execute("""
-            INSERT INTO customers (customer_id, email, signup_date, region, plan, device)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO customers (customer_id, email, signup_date, region, plan, device, churned)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (customer_id) DO NOTHING
         """, (
             data['customer_id'],
@@ -58,7 +58,8 @@ try:
             data['signup_date'],
             data['region'],
             data['plan'],
-            data['device']
+            data['device'],
+            data['churned']
         ))
         conn.commit()
 

@@ -18,8 +18,6 @@ for day_index in range(TOTAL_SIMULATION_DAYS):
     # Signups
     produce_signups(simulated_day)
     time.sleep(2)
-    # Update target-churn
-    update_churn(simulated_day)
 
     # Create activity
     produce_activity(simulated_day)
@@ -29,5 +27,8 @@ for day_index in range(TOTAL_SIMULATION_DAYS):
 
     # Create billing
     produce_billing(simulated_day)
+
+    # Update target-churn
+    update_churn(simulated_day)
 
     time.sleep(6)

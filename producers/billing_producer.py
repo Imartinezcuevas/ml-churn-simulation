@@ -20,8 +20,8 @@ DB_CONFIG = {
 producer = Producer({"bootstrap.servers": "localhost:29092"})
 
 PLAN_PRICES = {"free": 0, "basic": 10, "premium": 25}
-PLAN_PAYMENT_PROB = {"free": 0.0, "basic": 0.95, "premium": 0.98}
-PLAN_FAIL_SPIKE = {"basic": 0.10, "premium": 0.05}
+PLAN_PAYMENT_PROB = {"free": 0.0, "basic": 0.45, "premium": 0.78}
+PLAN_FAIL_SPIKE = {"basic": 0.25, "premium": 0.1}
 
 # -------------------
 # Helper functions

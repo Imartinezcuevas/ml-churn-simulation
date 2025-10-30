@@ -4,6 +4,7 @@ from datetime import datetime
 from confluent_kafka import Producer
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from drift_simulation import DriftConfig
 
 ACTIVITY_TOPIC = "activity_topic"
 SEED = 42
@@ -43,9 +44,23 @@ def fetch_active_customers(simulated_day):
     conn.close()
     return [c for c in customers if not c.get("churned", False)]
 
+def get_activity_probs_with_drift(day_index):
+    """Usuarios se vuelven menos activos con el tiempo"""
+    drift = DriftConfig.get_drift_factor(day_index)
+    
+    initial = {"free": 0.3, "basic": 0.6, "premium": 0.8}
+    final = {"free": 0.2, "basic": 0.5, "premium": 0.75}  # Menos activos
+    
+    return {
+        plan: initial[plan] * (1 - drift) + final[plan] * drift
+        for plan in initial.keys()
+    }
+
 def simulate_sessions(customer, simulated_day):
     plan = customer["plan"]
-    if np.random.rand() > PLAN_ACTIVE_PROB[plan]:
+    day_index = (simulated_day - datetime(2025,1,1)).days
+    active_probs = get_activity_probs_with_drift(day_index)
+    if np.random.rand() > active_probs[plan]:
         return []
 
     lam = PLAN_SESSION_MEAN[plan] * np.random.uniform(0.8, 1.2)

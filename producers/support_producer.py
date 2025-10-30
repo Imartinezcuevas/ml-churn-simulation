@@ -4,6 +4,7 @@ from datetime import datetime
 from confluent_kafka import Producer
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from drift_simulation import DriftConfig
 
 SUPPORT_TOPIC = "support_topic"
 SEED = 42
@@ -20,7 +21,7 @@ DB_CONFIG = {
 producer = Producer({"bootstrap.servers": "localhost:29092"})
 
 ISSUE_TYPES = ["billing", "technical", "usability", "other"]
-PLAN_TICKET_PROB = {"free": 0.05, "basic": 0.03, "premium": 0.01}
+PLAN_TICKET_PROB = {"free": 0.3, "basic": 0.2, "premium": 0.1}
 PLAN_RESOLVE_PROB = {"free": 0.6, "basic": 0.8, "premium": 0.9}
 
 # -------------------
@@ -31,6 +32,18 @@ def delivery_report(err, msg):
         print(f"Delivery failed: {err}")
     else:
         pass
+
+def get_support_probs_with_drift(day_index):
+    """Más problemas de soporte con el tiempo"""
+    drift = DriftConfig.get_drift_factor(day_index)
+    
+    initial = {"free": 0.3, "basic": 0.2, "premium": 0.1}
+    final = {"free": 0.4, "basic": 0.35, "premium": 0.15}  # Más tickets
+    
+    return {
+        plan: initial[plan] * (1 - drift) + final[plan] * drift
+        for plan in initial.keys()
+    }
 
 def fetch_active_customers(simulated_day):
     """Get all customers who signed up on or before simulated_day"""
@@ -49,14 +62,16 @@ def fetch_active_customers(simulated_day):
 def simulate_support(customer, simulated_day):
     """Simulate support tickets for a customer on a given day"""
     plan = customer["plan"]
+    day_index = (simulated_day - datetime(2025,1,1)).days
+    active_probs = get_support_probs_with_drift(day_index)
 
     # Skip if no ticket today
-    if np.random.rand() > PLAN_TICKET_PROB[plan]:
+    if np.random.rand() > active_probs[plan]:
         return []
 
     # Weekly spike: Monday
     prob_multiplier = 1.5 if simulated_day.weekday() == 0 else 1.0
-    num_tickets = np.random.poisson(PLAN_TICKET_PROB[plan] * 10 * prob_multiplier)
+    num_tickets = np.random.poisson(active_probs[plan] * 10 * prob_multiplier)
 
     tickets = []
     for _ in range(num_tickets):
